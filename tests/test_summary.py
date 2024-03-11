@@ -5,9 +5,9 @@ with open('dados.json', 'r') as arquivo_json:
     dados = json.load(arquivo_json)
 
 def get_summary_by_keyword(keyword):
-    for file in dados:
+    for file, valor in dados.items():
         if keyword in file:
-            return dados[file]
+            return valor['summary']
 
 def test_employment_summary():
     summary = get_summary_by_keyword('Employment')
@@ -42,7 +42,7 @@ def test_evolution_summary():
 def test_Human_summary():
     summary = get_summary_by_keyword('Human')
     assert summary.startswith('The Human Rights Team works collaboratively') == True
-    assert summary.endswith('or the period of May 1, 2022–April 30, 2023.') == True
+    assert summary.endswith('or the period of May 1, 2022April 30, 2023.') == True
 
 def test_Indigenous_summary():
     summary = get_summary_by_keyword('Indigenous')

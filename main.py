@@ -21,19 +21,26 @@ def main():
     for thread in threads:
         thread.join()
 
-    with open('dados.json', 'w') as arquivo_json:
-        json.dump(dados, arquivo_json)
-    return dados
+    novo_dicionario = {chave: {"summary": valor} for chave, valor in dados.items()}
+    json_result = json.dumps(novo_dicionario, indent=4)
+
+    with open('dados.json', 'w') as arquivo_saida:
+        arquivo_saida.write(json_result)
+    return json_result 
 
 def start_functions(dados, file, semaphore=threading.Semaphore(8)):
     """Chama as funcoes para processar o pdf e salva o texto em um dicionario. em no maximo 8 por vez"""
     with semaphore:
         print('Processando arquivo: ', file)
-        bolds, text_file = get_text_and_bold(file)
-        second_paragraph = get_secund_paragraph(bolds)
-        texto = text_file.split('EXECUTIVE SUMMARY')[1].split(second_paragraph)[0]
-        file = file.replace('pdfs/','')
-        dados[file] = texto.strip()
+        chave = file.replace('pdfs/','').replace('.pdf','').encode('ascii', errors='ignore').decode('ascii')
+        try:
+            bolds, text_file = get_text_and_bold(file)
+            second_paragraph = get_secund_paragraph(bolds)
+            texto = text_file.split('EXECUTIVE SUMMARY')[1].split(second_paragraph)[0]
+            dados[chave] = texto.strip()
+        except Exception as e:
+            print(f'Erro ao processar o arquivo {file}: {e}')
+            dados[chave] = 'Erro ao processar o arquivo'
 
 def get_files():
     """Retorna uma lista com os nomes dos arquivos PDF no diretório pdfs."""
@@ -55,7 +62,7 @@ def get_secund_paragraph(bolds):
     for word in bolds:
         word_ = word.replace('’s', '')
         if word_.isupper():
-            return word
+            return word.encode('ascii', errors='ignore').decode('ascii')
         
     return bolds[0]
 
