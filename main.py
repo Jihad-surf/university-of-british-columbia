@@ -104,6 +104,11 @@ def get_text_and_bold(pdf_path):
                 else:
                     continue
                 break
+            
+            # romeve subtextos
+            for valir in spans_rodape_page:
+                if len(valir) > 24:
+                    texto_pagina = texto_pagina.replace(valir, '')
 
             # pega as tabelas do pdf e remove do texto
             tabelas = tabula.read_pdf(pdf_path,pages= i+1, multiple_tables=True, stream=True)
@@ -121,6 +126,24 @@ def get_text_and_bold(pdf_path):
                     inicio = header[:15]
                     if len(inicio) < 14:
                         inicio = dados[:15]
+
+                    # remove o titulo da tabela
+                    i = texto_pagina.find(inicio)
+                    texto_antes = texto_pagina[:i]
+
+                    if texto_antes.endswith('\n'):
+                        texto_antes = texto_antes[:-1]
+
+                    texto_antes = texto_antes.split('\n')
+                    if len(texto_antes) > 1:
+                        texto_antes = texto_antes[:-1]
+                    if len(texto_antes) == 1:
+                        texto_antes = ''
+
+                    texto_antes = '\n'.join(texto_antes)
+                    texto_dps = texto_pagina[i:]
+                    texto_pagina = texto_antes + texto_dps
+
                     tabela_ultimos = texto_pagina.split(ultimos)[0] + ultimos
                     tabela_incio = tabela_ultimos.split(inicio)[1]
                     texto_tabela = inicio + tabela_incio
@@ -158,7 +181,7 @@ def letra_pequenas(filePath):
                     for lines in data:
                         results.append((lines['text'], lines['size'], i))
     
-    filtered_results = [(texto,i) for texto, font_size, i in results if font_size < 9.5 and len(texto) > 15]
+    filtered_results = [(texto,i) for texto, font_size, i in results if font_size < 9.5 and len(texto) > 10]
     pdf.close()
     return filtered_results
 

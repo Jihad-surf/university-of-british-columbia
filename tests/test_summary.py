@@ -11,8 +11,11 @@ def get_summary_by_keyword(keyword):
 
 def test_employment_summary():
     summary = get_summary_by_keyword('Employment')
+    #comeco
     assert summary.startswith('The purpose of the Employment') == True
+    #final
     assert summary.endswith('at UBC Okanagan.') == True
+    # texto nao deve conter a string
     assert not('Template revised' in summary )
 
 def test_generative_ai_summary():
@@ -20,6 +23,7 @@ def test_generative_ai_summary():
     assert summary.startswith('One academic term') == True
     assert summary.endswith(' generative AI at UBC.') == True
     assert not('Template revised' in summary )
+    assert not('ChatGPT is cu' in summary )
 
 
 def test_International_summary():
@@ -45,6 +49,8 @@ def test_annual_summary():
     assert summary.startswith('In accordance with') == True
     assert summary.endswith('its related government.') == True
     assert not('Template revised' in summary )
+
+    assert not('Refer to Appendix 1' in summary )
 
 
 def test_evolution_summary():
