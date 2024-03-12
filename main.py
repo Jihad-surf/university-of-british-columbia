@@ -4,6 +4,7 @@ import os
 import threading
 import json
 import warnings
+import fitz
 
 warnings.filterwarnings("ignore")
 
@@ -54,6 +55,7 @@ def get_files():
     print('Arquivos encontrados: ', pdf_files) 
     return pdf_files
 
+
 def get_secund_paragraph(bolds):
     """Retorna o titulo do segundo parágrafo do PDF. Para fazer o split do texto posteriormente."""
     index = bolds.index('EXECUTIVE SUMMARY')
@@ -66,17 +68,42 @@ def get_secund_paragraph(bolds):
         
     return bolds[0]
 
+
 def get_text_and_bold(pdf_path):
     """Retorna uma lista com as palavras em negrito do PDF. além do texto do PDF."""
     negrito = []
     texto_final = ''
+    spans_rodape = letra_pequenas(pdf_path)
            
     with pdfplumber.open(pdf_path) as pdf: 
         for i, page in enumerate(pdf.pages):
+
+            spans_rodape_page = [span for span, page_number in spans_rodape if page_number == i]
             texto_tabela = ''
+
             if i == 10:
                 break
+
             texto_pagina = page.extract_text()
+            
+            # pega as palavras em negrito do pdf
+            clean_text = page.filter(lambda obj: obj["object_type"] == "char" and "Bold" in obj["fontname"])
+            palavras = clean_text.extract_text()
+            
+            # romeve o header 1
+            if '\n' in texto_pagina:
+                if texto_pagina.split('\n')[0] in palavras:
+                    texto_pagina = texto_pagina.split('\n', 1)[1]
+
+            #remove o rodape 1
+            for line in texto_pagina.split('\n')[-6:]:
+                for valor in spans_rodape_page:
+                    if valor.strip() in line:
+                        texto_pagina = texto_pagina[:texto_pagina.rfind(valor.strip())]
+                        break
+                else:
+                    continue
+                break
 
             # pega as tabelas do pdf e remove do texto
             tabelas = tabula.read_pdf(pdf_path,pages= i+1, multiple_tables=True, stream=True)
@@ -84,9 +111,16 @@ def get_text_and_bold(pdf_path):
                 try:
                     header = [word for word in tabela.columns if 'Unnamed' not in word]
                     header = ' '.join(header)
-                    dados = tabela.to_string(index=False).replace('NaN', '').replace('  ',' ')
-                    ultimos = dados[-25:]
-                    inicio = header[:20]
+                    dados_ = tabela.to_string(index=False).replace('NaN', '').replace('Unnamed: 0', '').replace('Unnamed: 1', '').replace('Unnamed: 2', '')
+                    dados = []
+                    for linha in dados_.split('\n'):
+                        linha = ' '.join(linha.split())
+                        dados.append(linha)
+                    dados = '\n'.join(dados)
+                    ultimos = dados[-15:]
+                    inicio = header[:15]
+                    if len(inicio) < 14:
+                        inicio = dados[:15]
                     tabela_ultimos = texto_pagina.split(ultimos)[0] + ultimos
                     tabela_incio = tabela_ultimos.split(inicio)[1]
                     texto_tabela = inicio + tabela_incio
@@ -96,24 +130,44 @@ def get_text_and_bold(pdf_path):
                         for cell in row:
                             texto_pagina= texto_pagina.replace(str(cell), '')
 
-            texto_pagina = remove_header_footer(texto_pagina)
+            texto_pagina = remove_header_footer_fixos(texto_pagina)
             texto_final += texto_pagina
 
-            # pega as palavras em negrito do pdf, exceto as que estão na tabela
-            clean_text = page.filter(lambda obj: obj["object_type"] == "char" and "Bold" in obj["fontname"])
-            palavras = clean_text.extract_text()
+            # exceto as que estão na tabela
             negrito += [palavra for palavra in palavras.split('\n') if palavra not in texto_tabela]
 
     return negrito, texto_final
 
+
 #funcao auxiliar
-def remove_header_footer(texto):
+def letra_pequenas(filePath):
+    results = []
+    pdf = fitz.open(filePath) # filePath is a string that contains the path to the pdf
+
+    for i ,page in enumerate(pdf):
+        if page.number == 10:
+            break
+
+        dict = page.get_text("dict")
+        blocks = dict["blocks"]
+        for block in blocks:
+            if "lines" in block.keys():
+                spans = block['lines']
+                for span in spans:
+                    data = span['spans']
+                    for lines in data:
+                        results.append((lines['text'], lines['size'], i))
+    
+    filtered_results = [(texto,i) for texto, font_size, i in results if font_size < 9.5 and len(texto) > 15]
+    pdf.close()
+    return filtered_results
+
+
+def remove_header_footer_fixos(texto):
     """Remove o cabeçalho e rodapé do PDF."""
     texto = texto.split('\n')
-    if 'Page' in texto[-1]:
-        texto = texto[1:len(texto)-1]
-    else:
-        texto = texto[1:]
+    if 'Page' in texto[-1] or 'Template' in texto[-1]:
+        texto = texto[:len(texto)-1]
 
     texto = ' '.join(texto)
     texto = texto.encode('ascii', errors='ignore').decode('ascii')
