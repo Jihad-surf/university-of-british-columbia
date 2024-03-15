@@ -38,7 +38,7 @@ def main(start_scripts):
         if start_scripts['most words']:
             try:
                 most_words = {}
-                most_words = mw.obter_palavras_frequentes(texto,5)
+                most_words = mw.obter_palavras_frequentes(texto,3)
                 most_words = dict(most_words)
             except:
                 most_words = {'erro': 'erro ao contar palavras chaves'}
