@@ -3,7 +3,7 @@
 Certifique-se de ter o Python instalado. Clone o repositório e navegue até o diretório do projeto.
 
 ```bash
-git clone https://github.com/Jihad-surf/trinity_recibo_ferias.git
+git clone https://github.com/Jihad-surf/university-of-british-columbia
 ```
 Instale os pacotes necessarios
 ```bash

@@ -1,8 +1,6 @@
 import re
 import pandas as pd
 from collections import Counter
-import json
-from scripts.texts import get_texts
 
 
 def read_keywords():

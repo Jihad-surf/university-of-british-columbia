@@ -43,7 +43,7 @@ def main(start_scripts):
             except:
                 most_words = {'erro': 'erro ao contar palavras chaves'}
 
-            most_words_objeto = {'most_words': most_words}
+            most_words_objeto = {'top3_new_words': most_words}
             dados[file].update(most_words_objeto)
 
     with open('dados.json', 'w', encoding='utf-8') as arquivo:
